@@ -4,6 +4,7 @@ import {
     AudioPlayerStatus,
     createAudioPlayer,
     createAudioResource,
+    DiscordGatewayAdapterCreator,
     entersState,
     getVoiceConnection,
     joinVoiceChannel,
@@ -28,7 +29,7 @@ import { promisify } from "util";
 import { BotContext, Command, IServerMusicQueue, ISong } from "../types";
 import { createColouredEmbed, formatDuration, getFormattedLink } from "../util";
 
-const ytdl = require('ytdl-core');
+const ytdl = require('ytdl-core-discord');
 const ytsr = require('ytsr');
 
 const wait = promisify(setTimeout);
@@ -206,12 +207,12 @@ function addSongToQueue(
 
 async function getSongPlayer(song: ISong): Promise<AudioPlayer> {
     const player = createAudioPlayer();
-    const stream = ytdl(song.url, {
+    const stream = await ytdl(song.url, {
         filter: "audioonly",
-        //highWaterMark: 1 << 25, // Set buffer size
+        highWaterMark: 1 << 25, // Set buffer size
     });
     const resource = createAudioResource(stream, {
-        inputType: StreamType.Arbitrary,
+        inputType: StreamType.Opus,
     });
 
     player.play(resource);
@@ -222,7 +223,7 @@ async function connectToChannel(channel: VoiceChannel): Promise<VoiceConnection>
     const connection = joinVoiceChannel({
         channelId: channel.id,
         guildId: channel.guild.id,
-        adapterCreator: channel.guild.voiceAdapterCreator
+        adapterCreator: channel.guild.voiceAdapterCreator as DiscordGatewayAdapterCreator
     });
 
     try {
