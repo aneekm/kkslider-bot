@@ -9,6 +9,7 @@ const rest = new REST({
     version: '9'
 }).setToken(token);
 
+// replace with .applicationCommands(clientId) when registering commands globally
 rest.put(Routes.applicationGuildCommands(clientId, guildId), {
     body: commandsJson
 })

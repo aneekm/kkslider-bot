@@ -20,7 +20,6 @@ export default (client: Client, context: BotContext): void => {
                 serverQueue.voiceChannel = newState.channel as VoiceChannel;
             } else {
                 // disconnected/kicked from VC
-                await serverQueue.playingMessage?.delete();
                 context.musicQueues.delete(guildId);
             }
         } else if (serverQueue.voiceChannel.members.size === 1) {
@@ -31,6 +30,7 @@ export default (client: Client, context: BotContext): void => {
                     const connection = getVoiceConnection(guildId);
                     connection?.destroy();
                     serverQueue.songs = [];
+                    await serverQueue.playingMessage?.delete();
                     await serverQueue.textChannel.send({
                         embeds: [createColouredEmbed(
                             client.user?.displayAvatarURL(),
