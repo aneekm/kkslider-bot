@@ -1,6 +1,6 @@
-import { ButtonInteraction, Client, Interaction } from "discord.js";
+import { ButtonInteraction, Client } from "discord.js";
 import { BotContext, Button } from "../types";
-import { createColouredEmbed, getProperName } from "../util";
+import { getProperName } from "../util";
 
 export const skip: Button = new Button({
     name: 'skip',

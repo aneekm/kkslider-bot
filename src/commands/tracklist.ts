@@ -33,7 +33,8 @@ async function handler(client: Client, context: BotContext, interaction: Command
     // get current song timestamp
     let currStreamTime = 0;
     const audioPlayerState = serverQueue.audioPlayer?.state;
-    if (audioPlayerState?.status === AudioPlayerStatus.Playing) {
+    if (audioPlayerState?.status === AudioPlayerStatus.Playing
+        || audioPlayerState?.status === AudioPlayerStatus.Paused) {
         currStreamTime = audioPlayerState.playbackDuration / 1000;
     }
     const currTimestamp = `${formatDuration(currStreamTime)}/${currSong.formattedDuration}`
@@ -50,7 +51,9 @@ async function handler(client: Client, context: BotContext, interaction: Command
         `Tracklist (${songs.length + 1} songs)`,
     );
     tracklistEmbed.addField('Now Playing', `${getFormattedLink(currSong)} (${currTimestamp})`);
-    tracklistEmbed.addField('Coming Up', songsInQueue);
+    if (songsInQueue) {
+        tracklistEmbed.addField('Coming Up', songsInQueue);
+    }
 
     await interaction.editReply({
         embeds: [tracklistEmbed]
