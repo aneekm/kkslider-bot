@@ -26,24 +26,34 @@ import {
     VoiceChannel
 } from "discord.js";
 import { promisify } from "util";
+import ytdl from "ytdl-core-discord";
+import ytpl from "ytpl";
+import ytsr, { Video } from "ytsr";
 import { BotContext, Command, IServerMusicQueue, ISong } from "../types";
 import { createColouredEmbed, formatDuration, getFormattedLink } from "../util";
 
-const ytdl = require('ytdl-core-discord');
-const ytsr = require('ytsr');
-
 const wait = promisify(setTimeout);
+
+const help: string =
+    'Add a request to the queue. The request can be a YT video or playlist URL, ' +
+    'or just a name, and I\'ll see if I can find it.';
 
 const playCommand: any =
     new SlashCommandBuilder()
         .setName('play')
         .setDescription('Request something!')
         .addStringOption(option =>
-            option.setName('song')
-                .setDescription('The song you want K.K. to play, name or URL')
+            option.setName('request')
+                .setDescription('The song(s) you want K.K. to play, name or URL')
                 .setRequired(true));
 
-const handler = async (client: Client, context: BotContext, interaction: CommandInteraction) => {
+export const play: Command = new Command({
+    help: help,
+    slashCommand: playCommand,
+    run: handler
+});
+
+async function handler(client: Client, context: BotContext, interaction: CommandInteraction) {
     const voiceChannel = (interaction.member as GuildMember).voice.channel;
 
     if (!voiceChannel) {
@@ -64,16 +74,11 @@ const handler = async (client: Client, context: BotContext, interaction: Command
         interactionMember.voice.channel as VoiceChannel,
         interaction.guild as Guild,
         interactionMember,
-        [interaction.options.getString("song", true)]
+        interaction.options.getString("request", true)
     );
 
     interaction.editReply({ embeds: [playEmbed] });
 }
-
-export const play: Command = new Command({
-    slashCommand: playCommand,
-    run: handler
-});
 
 // Main handler for playing a song over VC
 async function handlePlay(
@@ -83,50 +88,69 @@ async function handlePlay(
     voiceChannel: VoiceChannel,
     guild: Guild,
     member: GuildMember,
-    args: string[]
+    query: string
 ): Promise<MessageEmbed> {
+    let queryList: string[] = [query];
+    let songList: ISong[] = [];
 
-    // Get the song info
-    let songInfo = null;
-    try {
-        songInfo = await getSongInfo(args);
-    } catch (error) {
-        return createColouredEmbed(client.user?.displayAvatarURL(), error as string);
-    }
-    if (songInfo === null) {
-        return createColouredEmbed(client.user?.displayAvatarURL(), "Could not find the song");
+    // if this is a playlist, convert into list of URLs
+    if (!ytdl.validateURL(query) && ytpl.validateID(query)) {
+        const plInfo = await ytpl(query);
+        queryList = plInfo.items.map(i => i.shortUrl);
     }
 
-    // Create the song object
-    const duration = parseInt(songInfo.videoDetails.lengthSeconds);
-    const song: ISong = {
-        info: songInfo,
-        title: songInfo.videoDetails.title,
-        url: songInfo.videoDetails.video_url,
-        duration: duration,
-        formattedDuration: formatDuration(duration),
-        member: member,
-    };
+    for (const query of queryList) {
+        // Get the song info
+        let songInfo = null;
+        try {
+            songInfo = await getSongInfo(query);
+        } catch (error) {
+            return createColouredEmbed(client.user?.displayAvatarURL(), error as string);
+        }
+        if (songInfo === null) {
+            return createColouredEmbed(client.user?.displayAvatarURL(), "Could not find the song");
+        }
 
-    // Add the new song to the queue
-    const serverQueue = addSongToQueue(
-        context,
-        song,
-        guild,
-        voiceChannel,
-        textChannel
-    );
+        // Create the song object
+        const duration = parseInt(songInfo.videoDetails.lengthSeconds);
+        const song: ISong = {
+            info: songInfo,
+            title: songInfo.videoDetails.title,
+            url: songInfo.videoDetails.video_url,
+            duration: duration,
+            formattedDuration: formatDuration(duration),
+            member: member,
+        };
+        songList.push(song);
+
+        // Add the new song to the queue
+        addSongToQueue(
+            context,
+            song,
+            guild,
+            voiceChannel,
+            textChannel
+        );
+    }
 
     // If a new queue was created then we immediately play the song
-    if (!serverQueue.isPlaying) {
+    if (!context.musicQueues.get(guild.id)?.isPlaying) {
         playSong(guild.id, context.musicQueues, context.timeoutDuration, client.user?.displayAvatarURL() as string);
     }
 
     return createColouredEmbed(
         member.displayAvatarURL(),
         'Queued up',
-        `${getFormattedLink(song)} (${song.formattedDuration})`
+        getQueuedSongMessage(songList)
     );
+}
+
+function getQueuedSongMessage(songList: ISong[]): string {
+    if (songList.length === 1) { // descriptive message
+        return `${getFormattedLink(songList[0])} (${songList[0].formattedDuration})`;
+    } else { // summary message
+        return `${getFormattedLink(songList[0])} and ${songList.length - 1} other(s)`;
+    }
 }
 
 /**
@@ -135,9 +159,9 @@ async function handlePlay(
  * @param args the arguments of the user
  * @returns the song info of their desired song
  */
-async function getSongInfo(args: string[]): Promise<any> {
+async function getSongInfo(query: string): Promise<any> {
     let songInfo = null;
-    let songUrl = args[0];
+    let songUrl = query;
 
     // Search for the song if the url is invalid
     // This part tends to break often, hence lots of try catch
@@ -145,20 +169,20 @@ async function getSongInfo(args: string[]): Promise<any> {
         // Combine args
         let searchString = null;
         try {
-            searchString = await ytsr.getFilters(args.join(" "));
+            searchString = await ytsr.getFilters(query);
         } catch (error) {
             console.log(error);
             throw "Error parsing arguments";
         }
 
         // Try to find video
-        const videoSearch = searchString.get("Type").get("Video");
+        const videoSearch = searchString.get("Type")?.get("Video");
         try {
-            const results: any = await ytsr(videoSearch.url, {
+            const results: ytsr.Result = await ytsr(videoSearch?.url as string, {
                 limit: 1,
             });
             console.log(results);
-            songUrl = results.items[0].url;
+            songUrl = (results.items[0] as Video).url;
         } catch (error) {
             console.log(error);
             throw "Error searching for the song";
@@ -336,21 +360,20 @@ function handleEmptyQueue(
 
     const connection = getVoiceConnection(guildId) as VoiceConnection;
 
-    if (serverQueue.voiceChannel.members.size === 0) {
-        // If there are no more members
-        connection.destroy();
-        musicQueue.delete(guildId);
-
-        createAndSendEmbed(serverQueue.textChannel, botDisplayAvatarURL,
-            "Stopping music as all members have left the voice channel");
-    }
-
     // if there is no new songs after timeout, leave VC
-    setTimeout(() => {
+    setTimeout(async () => {
         if (serverQueue.songs.length === 0) {
             serverQueue.playingMessage?.delete();
             connection.destroy();
             musicQueue.delete(guildId);
+            await serverQueue.textChannel.send({
+                embeds: [createColouredEmbed(
+                    botDisplayAvatarURL,
+                    'Show has Ended',
+                    'Sometimes, you just gotta sit in the yard and not be anything ' + 
+                    'for a while. Just be you. Thanks for listening.'
+                    )]
+            });
             return;
         }
     }, timeoutDuration);
