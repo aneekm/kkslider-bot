@@ -391,6 +391,10 @@ function createActionRow() {
                 .setLabel('Skip')
                 .setStyle('SECONDARY'),
             new MessageButton()
+                .setCustomId('shuffle')
+                .setLabel('Shuffle')
+                .setStyle('SUCCESS'),
+            new MessageButton()
                 .setCustomId('stop')
                 .setLabel('Stop')
                 .setStyle('DANGER')
