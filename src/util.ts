@@ -1,4 +1,10 @@
-import { GuildMember, Interaction, MessageEmbed } from "discord.js";
+import {
+    GuildMember,
+    Interaction,
+    MessageActionRow,
+    MessageButton,
+    MessageEmbed
+} from "discord.js";
 import { ISong } from "./types";
 
 export function getProperName(interaction:  Interaction): string {
@@ -33,4 +39,30 @@ export function formatDuration(seconds: number): string {
 
 export function getFormattedLink(song: ISong): string {
     return `[${song.title}](${song.url})`;
+}
+
+export function createActionRow(isRepeating: boolean) {
+    return new MessageActionRow()
+        .addComponents(
+            new MessageButton()
+                .setCustomId('playpause')
+                .setLabel('Play/Pause')
+                .setStyle('PRIMARY'),
+            new MessageButton()
+                .setCustomId('skip')
+                .setLabel('Skip')
+                .setStyle('SECONDARY'),
+            new MessageButton()
+                .setCustomId('shuffle')
+                .setLabel('Shuffle')
+                .setStyle('SUCCESS'),
+            new MessageButton()
+                .setCustomId('repeat')
+                .setLabel(isRepeating ? 'Repeat: ✅' : 'Repeat: ❎')
+                .setStyle('SECONDARY'),
+            new MessageButton()
+                .setCustomId('stop')
+                .setLabel('Stop')
+                .setStyle('DANGER')
+        );
 }

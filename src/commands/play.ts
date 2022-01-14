@@ -30,7 +30,7 @@ import ytdl from "ytdl-core-discord";
 import ytpl from "ytpl";
 import ytsr, { Video } from "ytsr";
 import { BotContext, Command, IServerMusicQueue, ISong } from "../types";
-import { createColouredEmbed, formatDuration, getFormattedLink } from "../util";
+import { createActionRow, createColouredEmbed, formatDuration, getFormattedLink } from "../util";
 
 const wait = promisify(setTimeout);
 
@@ -379,28 +379,6 @@ function handleEmptyQueue(
     }, timeoutDuration);
 }
 
-function createActionRow() {
-    return new MessageActionRow()
-        .addComponents(
-            new MessageButton()
-                .setCustomId('playpause')
-                .setLabel('Play/Pause')
-                .setStyle('PRIMARY'),
-            new MessageButton()
-                .setCustomId('skip')
-                .setLabel('Skip')
-                .setStyle('SECONDARY'),
-            new MessageButton()
-                .setCustomId('shuffle')
-                .setLabel('Shuffle')
-                .setStyle('SUCCESS'),
-            new MessageButton()
-                .setCustomId('stop')
-                .setLabel('Stop')
-                .setStyle('DANGER')
-        );
-}
-
 function sendPlayingEmbed(serverQueue: IServerMusicQueue, authorAvatarUrl: string) {
     const song = serverQueue.songs[0];
     const songLink = getFormattedLink(song);
@@ -409,7 +387,7 @@ function sendPlayingEmbed(serverQueue: IServerMusicQueue, authorAvatarUrl: strin
         'Now Playing',
         `Right on. I'm tuned up and ready to roll. This one's called ${songLink}. (${song.formattedDuration})`
     );
-    const actionRow: MessageActionRow = createActionRow();
+    const actionRow: MessageActionRow = createActionRow(serverQueue.isRepeating);
 
     serverQueue.textChannel.send({
         embeds: [embed],
