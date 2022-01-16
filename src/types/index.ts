@@ -1,5 +1,11 @@
 import { AudioPlayer } from "@discordjs/voice";
-import { GuildMember, Message, TextChannel, VoiceChannel } from "discord.js";
+import {
+    GuildMember,
+    Message,
+    Snowflake,
+    TextChannel,
+    VoiceChannel
+} from "discord.js";
 
 export * from './button';
 export * from './command';
@@ -28,4 +34,23 @@ export interface IServerMusicQueue {
     playingMessage?: Message;
     isPlaying: boolean;
     isRepeating: boolean;
+}
+
+/**
+ * Contains data for a reaction role in a server
+ */
+export interface IReactionRole {
+    id: Snowflake;
+    name: string;
+    description?: string;
+    emoji: string;
+}
+
+/**
+ * Contains data for the reaction role manager for a server
+ */
+export interface IServerRoleManager {
+    roles: IReactionRole[];
+    textChannel: TextChannel;
+    roleMessage?: Message;
 }
