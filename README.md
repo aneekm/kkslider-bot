@@ -9,6 +9,7 @@ create a `config.json` file in the `src/` directory like so:
 ```json
 {
     "clientId": "",
+    "inviteLink": "",
     "guildId": "",
     "token": ""
 }

@@ -12,7 +12,7 @@ const client = new Client({
 
 // Create new Context
 let context: BotContext = new BotContext({
-    timeoutDuration: 10000 // set timeout to 10s instead of 60s
+    timeoutDuration: 30000 // set timeout to 30s
 });
 
 // When client is ready, run this code (only once)
