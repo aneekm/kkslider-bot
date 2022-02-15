@@ -34,9 +34,16 @@ import { createActionRow, createColouredEmbed, formatDuration, getFormattedLink 
 
 const wait = promisify(setTimeout);
 
-const help: string =
+const shortHelp: string =
     'Add a request to the queue. The request can be a YT video or playlist URL, ' +
     'or just a name, and I\'ll see if I can find it.';
+
+const longHelp: string = 
+    'Use this command to add music to the list of upcoming tracks the bot will play. ' + 
+    'If nothing is currently playing, it will start playing the request immediately. ' +
+    'Otherwise, it will queue it up after the current set of tracks. You can provide ' +
+    'a Youtube video or playlist URL, or a freeform text query to the request parameter ' +
+    'of the command and the bot will search it up on Youtube.'
 
 const playCommand: any =
     new SlashCommandBuilder()
@@ -48,7 +55,8 @@ const playCommand: any =
                 .setRequired(true));
 
 export const play: Command = new Command({
-    help: help,
+    shortHelp: shortHelp,
+    longHelp: longHelp,
     slashCommand: playCommand,
     run: handler
 });

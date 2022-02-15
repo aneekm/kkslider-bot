@@ -1,28 +1,45 @@
 import { bold, SlashCommandBuilder } from "@discordjs/builders";
 import { Client, CommandInteraction } from "discord.js";
 import { BotContext, Command } from "../types";
-import { createColouredEmbed } from "../util";
+import { createColouredEmbed, getProperName } from "../util";
 import { inviteLink } from '../config.json';
 import { commands } from ".";
 
 const repoLink = 'https://github.com/aneekm/kkslider-bot';
 
-export const help: Command = new Command({
-    help: "Get a list of what I can do and how to use them.",
-    slashCommand: new SlashCommandBuilder()
+const helpCommand: any =
+    new SlashCommandBuilder()
         .setName('help')
-        .setDescription('Ask K.K. for a helping hand.'),
+        .setDescription('Ask K.K. for a helping hand.')
+        .addStringOption(option =>
+            option.setName('command')
+                .setDescription('The command you want K.K.\'s help with.')
+                .setRequired(false));
+
+export const help: Command = new Command({
+    shortHelp: "See a summary of what I can do or details about a specific command.",
+    slashCommand: helpCommand,
     run: handler
 });
 
 async function handler (client: Client, context: BotContext, interaction: CommandInteraction) {
+    const commandName = interaction.options.getString('command');
+    if (commandName) {
+        sendCommandHelpMessage(commandName, client, interaction);
+        return;
+    }
+
+    sendGeneralHelpMessage(client, interaction);
+}
+
+async function sendGeneralHelpMessage(client: Client, interaction: CommandInteraction) {
     let helpEmbed = createColouredEmbed(client.user?.displayAvatarURL(), "Available commands");
 
     const commandHelpTexts = Array.from(commands.values())
         .sort((a,b) => {
             return a.name.localeCompare(b.name);
         }).map(c => {
-            return `**${c.name}**: ${c.help}`;
+            return `**${c.name}**: ${c.shortHelp}`;
         });
 
     helpEmbed.addFields(
@@ -39,4 +56,23 @@ async function handler (client: Client, context: BotContext, interaction: Comman
     );
 
     await interaction.reply({ embeds: [helpEmbed] });
+}
+
+async function sendCommandHelpMessage(commandName: string, client: Client, interaction: CommandInteraction) {
+    if (commands.get(commandName)?.longHelp) {
+        await interaction.reply({
+            embeds: [
+                createColouredEmbed(
+                    client.user?.displayAvatarURL(),
+                    commandName,
+                    commands.get(commandName)?.longHelp)
+            ]
+        });
+    } else {
+        await interaction.reply({
+            content: `That one's pretty easy, ${getProperName(interaction)}! `
+                + 'Just check the help message.',
+            ephemeral: true
+        });
+    }
 }

@@ -5,7 +5,7 @@ import { BotContext, Command } from "../types";
 import { createColouredEmbed, formatDuration, getFormattedLink } from "../util";
 
 export const tracklist: Command = new Command({
-    help: 'See up to 10 of the upcoming songs queued up.',
+    shortHelp: 'See up to 10 of the upcoming songs queued up.',
     slashCommand: new SlashCommandBuilder()
         .setName('tracklist')
         .setDescription('Get K.K.\'s tracklist!'),

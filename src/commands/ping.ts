@@ -5,7 +5,7 @@ import { Command } from "../types/command";
 import { createColouredEmbed } from "../util";
 
 export const ping: Command = new Command({
-    help: 'Pong!',
+    shortHelp: 'Pong!',
     slashCommand: new SlashCommandBuilder()
         .setName('ping')
         .setDescription('Chat with K.K. before the show.'),
