@@ -9,6 +9,8 @@
     "watch": "npm run build -- -w",
     "start": "npm run build && node dist/index.js",
     "deploy": "npm run build && node dist/deploy-commands.js",
+    "deploy global": "npm run build && node dist/deploy-commands.js global",
+    "deploy clean": "npm run build && node dist/deploy-commands.js clean",
     "test": "echo \"K.K. Slider doesn't need a warmup!\" && exit 1"
   },
   "author": "",
